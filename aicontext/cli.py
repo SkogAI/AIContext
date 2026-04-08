@@ -39,6 +39,17 @@ def _default_chrome_path() -> str | None:
     return None
 
 
+def _default_edge_path() -> str | None:
+    candidates = [
+        os.path.expanduser("~/Library/Application Support/Microsoft Edge/Default/History"),
+        os.path.expanduser("~/.config/microsoft-edge/Default/History"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
 _KNOWN_SOURCES = [
     {
         "key": "claude_code",
@@ -54,6 +65,11 @@ _KNOWN_SOURCES = [
         "key": "browser_chrome",
         "label": "Chrome browser history",
         "default_path": _default_chrome_path(),
+    },
+    {
+        "key": "browser_edge",
+        "label": "Edge browser history",
+        "default_path": _default_edge_path(),
     },
     {
         "key": "browser_safari",

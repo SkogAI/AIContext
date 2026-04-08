@@ -60,6 +60,7 @@ The agent reads from `~/.aicontext/` using a read-only SQL query script. It neve
 | Claude Code | Session history, prompts, project paths |
 | Codex | Session history, prompts |
 | Chrome | Browser visits, downloads |
+| Edge | Browser visits, downloads |
 | Safari | Browser visits |
 
 More sources coming soon.
@@ -85,4 +86,4 @@ Ideas for new sources: Firefox, Arc, VS Code history, Obsidian, Zotero, Spotify,
 
 If this project is useful to you, consider giving it a star — it helps others find it.
 
-[![GitHub stars](https://img.shields.io/github/stars/SophonMe/aicontext?style=social)](https://github.com/SophonMe/aicontext)
+[![GitHub stars](https://img.shields.io/github/stars/SophonMe/AIContext?style=social)](https://github.com/SophonMe/AIContext)
