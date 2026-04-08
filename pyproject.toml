@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aicontext"
+version = "0.1.0"
+description = "Local-first AI context engine. Access your local data to provide context for any agent."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+
+[project.scripts]
+aicontext = "aicontext.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aicontext*"]
+
+[tool.setuptools.package-data]
+aicontext = ["resources/query.py"]

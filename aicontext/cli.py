@@ -1,0 +1,314 @@
+"""aicontext CLI — install and sync commands."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+import shutil
+import subprocess
+import sys
+
+logging.basicConfig(level=logging.WARNING, format="%(message)s")
+logger = logging.getLogger(__name__)
+
+
+# ── Paths ──────────────────────────────────────────────────────────────────
+
+AICONTEXT_DIR = os.path.expanduser("~/.aicontext")
+DATA_DIR = os.path.join(AICONTEXT_DIR, "data")
+SCRIPTS_DIR = os.path.join(AICONTEXT_DIR, "scripts")
+LOGS_DIR = os.path.join(AICONTEXT_DIR, "logs")
+CONFIG_PATH = os.path.join(AICONTEXT_DIR, "config.json")
+CLAUDE_AGENTS_DIR = os.path.expanduser("~/.claude/agents")
+
+LAUNCHD_LABEL = "me.sophon.aicontext"
+LAUNCHD_PLIST = os.path.expanduser(f"~/Library/LaunchAgents/{LAUNCHD_LABEL}.plist")
+SYNC_INTERVAL_SECONDS = 3600  # 1 hour
+
+
+def _default_chrome_path() -> str | None:
+    candidates = [
+        os.path.expanduser("~/Library/Application Support/Google/Chrome/Default/History"),
+        os.path.expanduser("~/.config/google-chrome/Default/History"),
+        os.path.expanduser("~/.config/chromium/Default/History"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+_KNOWN_SOURCES = [
+    {
+        "key": "claude_code",
+        "label": "Claude Code sessions",
+        "default_path": os.path.expanduser("~/.claude/projects"),
+    },
+    {
+        "key": "codex",
+        "label": "Codex sessions",
+        "default_path": os.path.expanduser("~/.codex/sessions"),
+    },
+    {
+        "key": "browser_chrome",
+        "label": "Chrome browser history",
+        "default_path": _default_chrome_path(),
+    },
+    {
+        "key": "browser_safari",
+        "label": "Safari browser history",
+        "default_path": os.path.expanduser("~/Library/Safari/History.db"),
+    },
+]
+
+
+# ── Timezone detection ─────────────────────────────────────────────────────
+
+def _get_local_timezone() -> str:
+    tz_link = "/etc/localtime"
+    if os.path.islink(tz_link):
+        target = os.path.realpath(tz_link)
+        if "zoneinfo/" in target:
+            return target.split("zoneinfo/", 1)[1]
+    tz_env = os.environ.get("TZ")
+    if tz_env:
+        return tz_env
+    return "UTC"
+
+
+# ── Config ─────────────────────────────────────────────────────────────────
+
+def _save_config(approved: list[tuple]) -> None:
+    config = {
+        "sources": [
+            {"key": source.source_key, "path": path}
+            for source, path in approved
+        ]
+    }
+    os.makedirs(AICONTEXT_DIR, exist_ok=True)
+    with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+
+def _load_config() -> dict | None:
+    if not os.path.exists(CONFIG_PATH):
+        return None
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+# ── Launchd (macOS) ────────────────────────────────────────────────────────
+
+def _install_launchd() -> bool:
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    os.makedirs(os.path.dirname(LAUNCHD_PLIST), exist_ok=True)
+
+    plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{LAUNCHD_LABEL}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{sys.executable}</string>
+        <string>-m</string>
+        <string>aicontext.cli</string>
+        <string>sync</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>{SYNC_INTERVAL_SECONDS}</integer>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>{os.path.join(LOGS_DIR, "sync.log")}</string>
+    <key>StandardErrorPath</key>
+    <string>{os.path.join(LOGS_DIR, "sync.log")}</string>
+</dict>
+</plist>"""
+
+    # Unload existing service if present
+    if os.path.exists(LAUNCHD_PLIST):
+        subprocess.run(["launchctl", "unload", LAUNCHD_PLIST],
+                       capture_output=True)
+
+    with open(LAUNCHD_PLIST, "w") as f:
+        f.write(plist)
+
+    result = subprocess.run(["launchctl", "load", LAUNCHD_PLIST],
+                            capture_output=True)
+    return result.returncode == 0
+
+
+# ── Helpers ────────────────────────────────────────────────────────────────
+
+def _ask(prompt: str, default_yes: bool = True) -> bool:
+    suffix = " [Y/n] " if default_yes else " [y/N] "
+    try:
+        answer = input(prompt + suffix).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+    if answer == "":
+        return default_yes
+    return answer in ("y", "yes")
+
+
+def _print_ok(msg: str) -> None:
+    print(f"  {msg}")
+
+
+def _run_ingest(sources_config: list[dict]) -> None:
+    """Ingest, rebuild skill, reinstall agent. Used by both install and sync."""
+    from aicontext.timestamps import set_timezone
+    from aicontext.sources import get_all_sources
+    from aicontext.ingester import Ingester
+    from aicontext.skill_builder import SkillBuilder
+    from aicontext.agent import install_agent
+
+    set_timezone(_get_local_timezone())
+
+    all_sources = get_all_sources()
+    to_run = []
+    for entry in sources_config:
+        source = all_sources.get(entry["key"])
+        path = entry["path"]
+        if source and os.path.exists(path):
+            to_run.append((source, path))
+
+    if not to_run:
+        return
+
+    ingester = Ingester(DATA_DIR)
+    results = ingester.build(to_run)
+
+    db_path = os.path.join(DATA_DIR, "activity.db")
+    SkillBuilder(skill_root=AICONTEXT_DIR, db_path=db_path).build(results)
+    install_agent(skill_root=AICONTEXT_DIR, db_path=db_path, agents_dir=CLAUDE_AGENTS_DIR)
+
+    return results
+
+
+# ── Commands ───────────────────────────────────────────────────────────────
+
+def cmd_install() -> None:
+    print("aicontext install")
+    print("─" * 40)
+    print()
+
+    # 1. Scan sources
+    from aicontext.sources import get_all_sources
+    all_sources = get_all_sources()
+
+    approved: list[tuple] = []
+
+    print("Scanning for local data sources...")
+    print()
+    for spec in _KNOWN_SOURCES:
+        key = spec["key"]
+        label = spec["label"]
+        path = spec["default_path"]
+
+        if path is None or not os.path.exists(path):
+            print(f"  [ ] {label} — not found")
+            continue
+
+        source = all_sources.get(key)
+        if source is None:
+            print(f"  [ ] {label} — source not available")
+            continue
+
+        print(f"  [found] {label}")
+        print(f"          {path}")
+        if _ask("         Include?"):
+            approved.append((source, path))
+            print(f"          -> included")
+        else:
+            print(f"          -> skipped")
+        print()
+
+    if not approved:
+        print("No sources selected. Nothing to install.")
+        return
+
+    print()
+    print(f"Installing to {AICONTEXT_DIR}")
+
+    # 2. Create directories and copy query.py
+    os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(SCRIPTS_DIR, exist_ok=True)
+    query_src = os.path.join(os.path.dirname(__file__), "resources", "query.py")
+    shutil.copy2(query_src, os.path.join(SCRIPTS_DIR, "query.py"))
+
+    # 3. Save config for daemon
+    _save_config(approved)
+
+    # 4. Run initial ingestion
+    print()
+    print("Ingesting data...")
+    logging.getLogger("aicontext").setLevel(logging.INFO)
+
+    sources_config = [{"key": s.source_key, "path": p} for s, p in approved]
+    results = _run_ingest(sources_config)
+
+    total_inserted = sum(r.records_inserted for r in results)
+    total_updated = sum(r.records_updated for r in results)
+    print()
+    print(f"  Ingested: {total_inserted} new records, {total_updated} updated")
+
+    db_path = os.path.join(DATA_DIR, "activity.db")
+    _print_ok(f"Generated SKILL.md -> {os.path.join(AICONTEXT_DIR, 'SKILL.md')}")
+    _print_ok(f"Installed agent    -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophon-me-context-engine.md')}")
+
+    # 5. Install background sync service
+    if sys.platform == "darwin":
+        if _install_launchd():
+            _print_ok(f"Background sync    -> hourly via launchd ({LAUNCHD_LABEL})")
+        else:
+            _print_ok("Background sync    -> launchd install failed (run manually: aicontext sync)")
+
+    print()
+    print("Done.")
+    print()
+    print("The sophon-me-context-engine agent is now active in Claude Code.")
+    print("Your data syncs automatically every hour.")
+
+
+def cmd_sync() -> None:
+    """Re-ingest all configured sources (called by launchd hourly)."""
+    config = _load_config()
+    if not config:
+        print("No config found. Run 'aicontext install' first.", file=sys.stderr)
+        sys.exit(1)
+
+    logging.getLogger("aicontext").setLevel(logging.INFO)
+    _run_ingest(config.get("sources", []))
+
+
+# ── Entry point ────────────────────────────────────────────────────────────
+
+def main() -> None:
+    args = sys.argv[1:]
+
+    if not args or args[0] == "install":
+        cmd_install()
+    elif args[0] == "sync":
+        cmd_sync()
+    elif args[0] in ("-h", "--help", "help"):
+        print("Usage: aicontext install")
+        print()
+        print("Commands:")
+        print("  install   Scan local data, ingest, and install the Claude Code agent")
+        print("  sync      Re-ingest all configured sources (runs automatically every hour)")
+    elif args[0] in ("-v", "--version", "version"):
+        from aicontext import __version__
+        print(f"aicontext {__version__}")
+    else:
+        print(f"Unknown command: {args[0]}", file=sys.stderr)
+        print("Run 'aicontext --help' for usage.", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
