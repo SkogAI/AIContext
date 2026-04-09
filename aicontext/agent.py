@@ -1,4 +1,4 @@
-"""Generate the sophon-me-context-engine agent for Claude Code."""
+"""Generate agents and skills for Claude Code, Codex, and Pi."""
 
 import logging
 import os
@@ -172,3 +172,34 @@ def install_codex_agent(skill_root: str, db_path: str, agents_dir: str) -> str:
         f.write(content)
     logger.info("Installed Codex agent: %s", path)
     return path
+
+
+# ── Pi skill ──────────────────────────────────────────────────────────────
+
+
+def install_pi_skill(skill_root: str, skills_dir: str) -> str:
+    """Symlink aicontext into Pi's skills directory so Pi discovers it natively.
+
+    Creates ~/.pi/agent/skills/personal-data/ with symlinks pointing back
+    to the canonical files under skill_root (~/.aicontext/).
+    """
+    skill_dir = os.path.join(skills_dir, "personal-data")
+    os.makedirs(skill_dir, exist_ok=True)
+
+    targets = {
+        "SKILL.md": os.path.join(skill_root, "SKILL.md"),
+        "scripts": os.path.join(skill_root, "scripts"),
+        "data": os.path.join(skill_root, "data"),
+        "reference": os.path.join(skill_root, "reference"),
+    }
+
+    for name, target in targets.items():
+        link = os.path.join(skill_dir, name)
+        # Remove stale link or file before creating
+        if os.path.islink(link) or os.path.exists(link):
+            os.remove(link)
+        if os.path.exists(target):
+            os.symlink(target, link)
+
+    logger.info("Installed Pi skill: %s", skill_dir)
+    return skill_dir

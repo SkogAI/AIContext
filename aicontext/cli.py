@@ -22,6 +22,7 @@ LOGS_DIR = os.path.join(AICONTEXT_DIR, "logs")
 CONFIG_PATH = os.path.join(AICONTEXT_DIR, "config.json")
 CLAUDE_AGENTS_DIR = os.path.expanduser("~/.claude/agents")
 CODEX_AGENTS_DIR = os.path.expanduser("~/.codex/agents")
+PI_SKILLS_DIR = os.path.expanduser("~/.pi/agent/skills")
 
 LAUNCHD_LABEL = "me.sophon.aicontext"
 LAUNCHD_PLIST = os.path.expanduser(f"~/Library/LaunchAgents/{LAUNCHD_LABEL}.plist")
@@ -182,7 +183,7 @@ def _run_ingest(sources_config: list[dict]) -> None:
     from aicontext.sources import get_all_sources
     from aicontext.ingester import Ingester
     from aicontext.skill_builder import SkillBuilder
-    from aicontext.agent import install_agent, install_codex_agent
+    from aicontext.agent import install_agent, install_codex_agent, install_pi_skill
 
     set_timezone(_get_local_timezone())
 
@@ -204,6 +205,7 @@ def _run_ingest(sources_config: list[dict]) -> None:
     SkillBuilder(skill_root=AICONTEXT_DIR, db_path=db_path).build(results)
     install_agent(skill_root=AICONTEXT_DIR, db_path=db_path, agents_dir=CLAUDE_AGENTS_DIR)
     install_codex_agent(skill_root=AICONTEXT_DIR, db_path=db_path, agents_dir=CODEX_AGENTS_DIR)
+    install_pi_skill(skill_root=AICONTEXT_DIR, skills_dir=PI_SKILLS_DIR)
 
     return results
 
@@ -279,6 +281,7 @@ def cmd_install() -> None:
     _print_ok(f"Generated SKILL.md  -> {os.path.join(AICONTEXT_DIR, 'SKILL.md')}")
     _print_ok(f"Claude Code agent   -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophon-me-context-engine.md')}")
     _print_ok(f"Codex agent         -> {os.path.join(CODEX_AGENTS_DIR, 'sophon-me-context-engine.toml')}")
+    _print_ok(f"Pi skill            -> {os.path.join(PI_SKILLS_DIR, 'personal-data')}")
 
     # 5. Install background sync service
     if sys.platform == "darwin":
@@ -290,7 +293,7 @@ def cmd_install() -> None:
     print()
     print("Done.")
     print()
-    print("The sophon-me-context-engine agent is now active in Claude Code and Codex.")
+    print("The sophon-me-context-engine agent is now active in Claude Code, Codex, and Pi.")
     print("Your data syncs automatically every hour.")
 
 
@@ -333,6 +336,11 @@ def cmd_uninstall() -> None:
     if os.path.exists(codex_agent):
         os.remove(codex_agent)
         removed.append(f"Codex agent         -> {codex_agent}")
+
+    pi_skill = os.path.join(PI_SKILLS_DIR, "personal-data")
+    if os.path.isdir(pi_skill):
+        shutil.rmtree(pi_skill)
+        removed.append(f"Pi skill            -> {pi_skill}")
 
     # 3. Remove ~/.aicontext directory (data, config, scripts, logs, SKILL.md, reference)
     if os.path.isdir(AICONTEXT_DIR):
