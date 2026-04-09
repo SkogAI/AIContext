@@ -165,17 +165,22 @@ def get_status(api_key: str) -> dict:
 
     Returns dict with keys:
         my_id: str
-        devices: list of {id, name, connected, address, last_seen}
+        mode: 'lan' | 'web'
+        devices: list of {id, name, connected, address, last_seen, never_seen}
     """
     my_id = get_device_id(api_key)
+    mode = get_sync_mode(api_key)
     connections = _api("GET", "/rest/system/connections", api_key) or {}
     conn_map = connections.get("connections", {})
+
+    # Device stats for lastSeen timestamps
+    device_stats = _api("GET", "/rest/stats/device", api_key) or {}
 
     # Get folder config to find which devices share the exchange folder
     try:
         folder = _api("GET", f"/rest/config/folders/{EXCHANGE_FOLDER_ID}", api_key)
     except urllib.error.HTTPError:
-        return {"my_id": my_id, "devices": []}
+        return {"my_id": my_id, "mode": mode, "devices": []}
 
     shared_ids = {d["deviceID"] for d in folder.get("devices", [])} - {my_id}
 
@@ -186,12 +191,17 @@ def get_status(api_key: str) -> dict:
     devices = []
     for did in sorted(shared_ids):
         conn = conn_map.get(did, {})
+        stats = device_stats.get(did, {})
+        last_seen = stats.get("lastSeen", "")
+        # Syncthing uses epoch zero (1969/1970) for "never seen"
+        never_seen = not last_seen or "1969" in last_seen or "1970" in last_seen
         devices.append({
             "id": did,
             "name": name_map.get(did, ""),
             "connected": conn.get("connected", False),
             "address": conn.get("address", ""),
-            "last_seen": conn.get("lastHandshakeNs", 0),
+            "last_seen": "" if never_seen else last_seen,
+            "never_seen": never_seen,
         })
 
-    return {"my_id": my_id, "devices": devices}
+    return {"my_id": my_id, "mode": mode, "devices": devices}

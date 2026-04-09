@@ -332,6 +332,14 @@ def cmd_sync() -> None:
         print("No config found. Run 'aicontext install' first.", file=sys.stderr)
         sys.exit(1)
 
+    # Reconfigure logging with timestamps for daemon/sync runs
+    root = logging.getLogger()
+    root.handlers.clear()
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     logging.getLogger("aicontext").setLevel(logging.INFO)
     _run_ingest(config.get("sources", []))
 
@@ -499,23 +507,34 @@ def cmd_pair() -> None:
         print("Sync mode: lan (local network only)")
         return
 
-    # --status: show paired devices
+    # --status: show paired devices with diagnostics
     if args and args[0] == "--status":
         status = get_status(api_key)
-        mode = get_sync_mode(api_key)
         print(f"Device ID: {status['my_id']}")
         print(f"Exchange folder: {EXCHANGE_DIR}")
-        print(f"Sync mode: {mode}")
+        print(f"Sync mode: {status['mode']}")
         print()
         if not status["devices"]:
             print("No paired devices. Run: aicontext pair <device-id>")
         else:
             print("Paired devices:")
             for d in status["devices"]:
-                state = "connected" if d["connected"] else "disconnected"
                 name = f" ({d['name']})" if d["name"] else ""
-                addr = f"  {d['address']}" if d["address"] and d["connected"] else ""
-                print(f"  {d['id'][:20]}...{name}  {state}{addr}")
+                if d["connected"]:
+                    addr = f"  {d['address']}" if d["address"] else ""
+                    print(f"  {d['id'][:20]}...{name}  connected{addr}")
+                elif d["never_seen"]:
+                    print(f"  {d['id'][:20]}...{name}  never connected")
+                    print(f"    -> The other device may not have paired back.")
+                    print(f"       Run on that device: aicontext pair {status['my_id']}")
+                else:
+                    last = d["last_seen"][:16].replace("T", " ") if d["last_seen"] else "unknown"
+                    print(f"  {d['id'][:20]}...{name}  disconnected (last seen: {last})")
+                    if status["mode"] == "lan":
+                        print(f"    -> Check: is the device on the same network? Is Syncthing running?")
+                        print(f"       For internet sync: aicontext pair --web (on both devices)")
+                    else:
+                        print(f"    -> Check: is Syncthing running on the other device?")
         return
 
     has_sources = config.get("sources")
