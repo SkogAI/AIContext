@@ -127,12 +127,21 @@ CREATE TABLE activity (
 
 ## Query Best Practices
 
+**CRITICAL — Timestamp handling:** Timestamps are stored as ISO 8601 in LOCAL time
+with timezone offset (e.g. `2026-04-02T23:14:00-07:00`). SQLite's `strftime()` and
+`datetime()` silently convert these to UTC, shifting hours by the offset. This produces
+WRONG results for any time-of-day or recency analysis. Use string operations instead:
+- Extract hour: `SUBSTR(timestamp, 12, 2)` — NOT `strftime('%H', timestamp)`
+- Extract date: `SUBSTR(timestamp, 1, 10)` — NOT `date(timestamp)`
+- Day of week: `strftime('%w', SUBSTR(timestamp, 1, 10))` (date-only string has no offset — safe)
+- Filter by recency: use `datetime('now', 'localtime', '-10 days')` — the `'localtime'` modifier is required to match stored local timestamps
+
 **Merge multi-source queries with `IN`** instead of issuing separate queries per source:
 ```sql
 SELECT timestamp, source, title
 FROM activity
 WHERE source IN ('claude_code', 'codex') AND action = 'prompted'
-  AND timestamp > datetime('now', '-10 days')
+  AND timestamp > datetime('now', 'localtime', '-10 days')
 ORDER BY timestamp DESC LIMIT 120
 ```
 
@@ -227,7 +236,7 @@ Use `--max-cell 0` for full cell contents.
 `activity`: timestamp, source, service, action, title, extra (JSON), ref_type, ref_id
 
 ## Notes
-- All timestamps in local time ({tz}) with timezone offset
+- All timestamps in local time ({tz}) with timezone offset. SQLite's `strftime()`/`datetime()` silently convert to UTC — use `SUBSTR()` for hour/date extraction and `datetime('now', 'localtime', ...)` for recency filters. See `reference/activity.md` for details.
 - `ref_type='local'`: ref_id is a path under `data/reference_data/`, optionally with `#msg:<id>` suffix
 - `ref_type='url'`: ref_id is the URL itself
 - `reference/activity.md` — schema and SQL query best practices
