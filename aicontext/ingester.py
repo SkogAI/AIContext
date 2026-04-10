@@ -227,8 +227,6 @@ class Ingester:
                 written, overwritten, ref_skipped = self._ingest_references(source, source_path, {})
                 result.reference_files_written = written + overwritten
                 result.reference_files_overwritten = overwritten
-                logger.info("  Reference: %d written, %d overwritten, %d skipped",
-                            written, overwritten, ref_skipped)
 
                 raw_records = source.ingest_activity(source_path, {})
                 result.records_parsed = len(raw_records)
@@ -243,52 +241,32 @@ class Ingester:
                     else:
                         valid_records.append(rec)
 
-                if result.records_rejected:
-                    logger.info("  Parsed: %d records, %d rejected (%s)",
-                                len(raw_records), result.records_rejected,
-                                ", ".join(f"{k}={v}" for k, v in reject_reasons.most_common()))
-                else:
-                    logger.info("  Parsed: %d records (0 rejected)", len(raw_records))
-
                 if not valid_records:
                     result.elapsed_seconds = time.time() - t0
                     results.append(result)
                     continue
 
-                before_count = len(valid_records)
                 valid_records = collapse_consecutive(
                     valid_records,
                     key_fn=lambda rec: (rec.service, rec.action, normalize_for_dedup(rec.title)),
                 )
-                collapsed_count = before_count - len(valid_records)
-                if collapsed_count:
-                    logger.info("  Collapsed: %d consecutive duplicates", collapsed_count)
 
                 for rec in valid_records:
                     pending_records.append(_PendingRecord(record=rec, source=source, result=result))
 
-                logger.info("  Queued: %d valid records", len(valid_records))
-
             except Exception as exc:
-                logger.error("  Error processing %s: %s", source.name, exc, exc_info=True)
+                logger.debug("Error processing %s: %s", source.name, exc, exc_info=True)
                 result.errors.append(str(exc))
 
             result.elapsed_seconds = time.time() - t0
             results.append(result)
 
         if pending_records:
-            logger.info("=== Dedup ===")
             to_insert, to_update, skipped, conflicts, batch_dupes = self._dedup_records(pending_records)
-            logger.info("  Batch dupes: %d, conflicts: %d, inserting: %d, updating: %d, skipping: %d",
-                        batch_dupes, conflicts, len(to_insert), len(to_update), skipped)
 
             if to_insert:
                 insert_records(self.db_path, to_insert)
             for row_id, rec in to_update:
                 update_record(self.db_path, row_id, rec)
-
-        total_inserted = sum(r.records_inserted for r in results)
-        total_updated = sum(r.records_updated for r in results)
-        logger.info("=== Done: %d inserted, %d updated ===", total_inserted, total_updated)
 
         return results

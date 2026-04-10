@@ -175,6 +175,48 @@ def _print_ok(msg: str) -> None:
     print(f"  {msg}")
 
 
+def _clean_error(msg: str) -> str:
+    import re
+    msg = re.sub(r"^\[Errno \d+\]\s*", "", msg)  # strip [Errno N]
+    msg = re.sub(r":\s*'[^']*'$", "", msg)        # strip trailing: '/path/...'
+    return msg.strip()
+
+
+def _print_ingestion_table(results: list) -> None:
+    rows = []
+    for r in results:
+        name = r.source.name
+        if r.errors:
+            rows.append((name, None, None, None, _clean_error(r.errors[0])))
+        else:
+            rows.append((name, r.records_parsed, r.records_inserted, r.records_updated, None))
+
+    total_parsed = sum(r.records_parsed for r in results if not r.errors)
+    total_new = sum(r.records_inserted for r in results)
+    total_updated = sum(r.records_updated for r in results)
+
+    col_name    = max(max(len(r[0]) for r in rows), len("Source"))
+    col_parsed  = max(max(len(f"{r[1]:,}") if r[1] is not None else 1 for r in rows), len("Parsed"))
+    col_new     = max(max(len(f"{r[2]:,}") if r[2] is not None else 1 for r in rows), len("New"))
+    col_updated = max(max(len(f"{r[3]:,}") if r[3] is not None else 1 for r in rows), len("Updated"))
+
+    row_width = col_name + 2 + col_parsed + 2 + col_new + 2 + col_updated
+    divider = f"  {'─' * row_width}"
+    header  = f"  {'Source':<{col_name}}  {'Parsed':>{col_parsed}}  {'New':>{col_new}}  {'Updated':>{col_updated}}"
+
+    print(header)
+    print(divider)
+    for name, parsed, new, updated, error in rows:
+        if error:
+            blank_new     = " " * col_new
+            blank_updated = " " * col_updated
+            print(f"  {name:<{col_name}}  {'—':>{col_parsed}}  {blank_new}  {blank_updated}  ✗  {error}")
+        else:
+            print(f"  {name:<{col_name}}  {parsed:>{col_parsed},}  {new:>{col_new},}  {updated:>{col_updated},}")
+    print(divider)
+    print(f"  {'Total':<{col_name}}  {total_parsed:>{col_parsed},}  {total_new:>{col_new},}  {total_updated:>{col_updated},}")
+
+
 def _run_ingest(sources_config: list[dict]) -> list:
     """Ingest sources, rebuild skill, reinstall agents. Used by both install and sync."""
     from aicontext.timestamps import set_timezone
@@ -230,12 +272,10 @@ def cmd_install() -> None:
         path = spec["default_path"]
 
         if path is None or not os.path.exists(path):
-            print(f"  [ ] {label} — not found")
             continue
 
         source = all_sources.get(key)
         if source is None:
-            print(f"  [ ] {label} — source not available")
             continue
 
         print(f"  [found] {label}")
@@ -266,17 +306,13 @@ def cmd_install() -> None:
     # 4. Run initial ingestion
     print()
     print("Ingesting data...")
-    logging.getLogger("aicontext").setLevel(logging.INFO)
 
     sources_config = [{"key": s.source_key, "path": p} for s, p in approved]
     results = _run_ingest(sources_config)
 
-    total_inserted = sum(r.records_inserted for r in results)
-    total_updated = sum(r.records_updated for r in results)
     print()
-    print(f"  Ingested: {total_inserted} new records, {total_updated} updated")
-
-    db_path = os.path.join(DATA_DIR, "activity.db")
+    _print_ingestion_table(results)
+    print()
     _print_ok(f"Generated SKILL.md  -> {os.path.join(AICONTEXT_DIR, 'SKILL.md')}")
     _print_ok(f"Claude Code agent   -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophon-me-context-engine.md')}")
     _print_ok(f"Codex agent         -> {os.path.join(CODEX_AGENTS_DIR, 'sophon-me-context-engine.toml')}")
@@ -285,15 +321,21 @@ def cmd_install() -> None:
     # 5. Install background sync service
     if sys.platform == "darwin":
         if _install_launchd():
-            _print_ok(f"Background sync    -> hourly via launchd ({LAUNCHD_LABEL})")
+            _print_ok(f"Background sync     -> hourly via launchd ({LAUNCHD_LABEL})")
         else:
-            _print_ok("Background sync    -> launchd install failed (run manually: aicontext sync)")
+            _print_ok("Background sync     -> launchd install failed (run manually: aicontext sync)")
 
     print()
-    print("Done.")
+    print("Done. The sophon-me-context-engine agent is now active in Claude Code, Codex, and Pi.")
     print()
-    print("The sophon-me-context-engine agent is now active in Claude Code, Codex, and Pi.")
-    print("Your data syncs automatically every hour.")
+    print("Give it a try!")
+    print('  "Do thorough research on my history, and infer my MBTI"')
+    print('  "Recommend a book, video, or podcast for me"')
+    print('  "What do I want to buy the most?"')
+    print('  "Show how deeply you know about me"')
+    print('  "Check my history and suggest what I should do this weekend"')
+    print('  "What is the biggest miss of my daily life that I may not even be aware of?"')
+    print()
 
 
 def cmd_sync() -> None:
