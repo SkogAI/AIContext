@@ -79,9 +79,47 @@ Return your findings as a structured context block:
 - Be fast. Spawn parallel tool calls whenever possible.
 - Start with broad queries to orient, then drill into specifics.
 
+## Query Best Practices
+
+**Merge multi-source queries with `IN`** instead of issuing separate queries per source:
+```sql
+SELECT timestamp, source, title
+FROM activity
+WHERE source IN ('claude_code', 'codex') AND action = 'prompted'
+  AND timestamp > datetime('now', '-10 days')
+ORDER BY timestamp DESC LIMIT 120
+```
+
+**Filter with `LIKE` before fetching** instead of dumping raw rows and reading them:
+```sql
+SELECT timestamp, title FROM activity
+WHERE source = 'chrome'
+  AND (title LIKE '%job%' OR title LIKE '%resume%' OR title LIKE '%career%')
+ORDER BY timestamp DESC LIMIT 50
+```
+
+**Use `extra` for richer signal.** The `extra` column is a JSON field with metadata:
+- `claude_code` / `codex`: `project_path`, `git_branch` — which project the user was working in
+- `chrome` (visited): `duration_sec` — how long they actually stayed on a page
+
+```sql
+-- Time spent per project
+SELECT json_extract(extra, '$.project_path') AS project, COUNT(*) AS n
+FROM activity WHERE source = 'claude_code' AND extra IS NOT NULL
+GROUP BY project ORDER BY n DESC
+
+-- Pages the user actually read (not just glanced at)
+SELECT timestamp, title FROM activity
+WHERE source = 'chrome'
+  AND json_extract(extra, '$.duration_sec') > 60
+ORDER BY timestamp DESC LIMIT 50
+```
+
 ## Important Guidelines
 - Do NOT explore, read, or access any files outside of {skill_root}
 - Never fabricate or assume historical data — only report what you actually find
+- Be thorough but focused — retrieve data relevant to the task, not everything available
+- If the skill fails or data is unavailable, clearly report what you attempted and what went wrong
 - Summarize concisely; the consuming agent needs actionable context, not raw data dumps
 '''
 
@@ -148,16 +186,50 @@ Return your findings as a structured context block:
 - **Data Confidence**: Note if the data is sparse, potentially outdated, or highly reliable
 
 ## Performance
-- Be fast. Spawn parallel tool calls whenever possible - e.g. run multiple SQL queries at once instead of sequentially.
-- Start with broad queries to orient, then drill into specifics. Don't over-query.
+- Be fast. Spawn parallel tool calls whenever possible.
+- Start with broad queries to orient, then drill into specifics.
+
+## Query Best Practices
+
+**Merge multi-source queries with `IN`** instead of issuing separate queries per source:
+```sql
+SELECT timestamp, source, title
+FROM activity
+WHERE source IN ('claude_code', 'codex') AND action = 'prompted'
+  AND timestamp > datetime('now', '-10 days')
+ORDER BY timestamp DESC LIMIT 120
+```
+
+**Filter with `LIKE` before fetching** instead of dumping raw rows and reading them:
+```sql
+SELECT timestamp, title FROM activity
+WHERE source = 'chrome'
+  AND (title LIKE '%job%' OR title LIKE '%resume%' OR title LIKE '%career%')
+ORDER BY timestamp DESC LIMIT 50
+```
+
+**Use `extra` for richer signal.** The `extra` column is a JSON field with metadata:
+- `claude_code` / `codex`: `project_path`, `git_branch` — which project the user was working in
+- `chrome` (visited): `duration_sec` — how long they actually stayed on a page
+
+```sql
+-- Time spent per project
+SELECT json_extract(extra, '$.project_path') AS project, COUNT(*) AS n
+FROM activity WHERE source = 'claude_code' AND extra IS NOT NULL
+GROUP BY project ORDER BY n DESC
+
+-- Pages the user actually read (not just glanced at)
+SELECT timestamp, title FROM activity
+WHERE source = 'chrome'
+  AND json_extract(extra, '$.duration_sec') > 60
+ORDER BY timestamp DESC LIMIT 50
+```
 
 ## Important Guidelines
-- Do NOT explore, read, or access any files outside of {skill_root} - this is your only authorized data source
-- Always start by reading and understanding the skill's structure and documentation before attempting to use it
-- Be thorough but focused - retrieve data relevant to the task, not everything available
-- Respect data boundaries - only access what the skill is designed to provide
-- If the skill fails or data is unavailable, clearly report what you attempted and what went wrong
+- Do NOT explore, read, or access any files outside of {skill_root}
 - Never fabricate or assume historical data - only report what you actually find
+- Be thorough but focused - retrieve data relevant to the task, not everything available
+- If the skill fails or data is unavailable, clearly report what you attempted and what went wrong
 - Summarize concisely; the consuming agent needs actionable context, not raw data dumps
 '''
 """
