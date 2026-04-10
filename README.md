@@ -33,13 +33,13 @@ Ingesting data...
 
 Done.
 
-The sophon-me-context-engine agent is now active in Claude Code.
+The sophonme-context-engine agent is now active in Claude Code.
 Your data syncs automatically every hour.
 ```
 
 ## How it works
 
-After install, Claude Code has a `sophon-me-context-engine` subagent. Claude automatically invokes it before asking you for context — querying your local activity database to surface relevant history for whatever task you're working on.
+After install, Claude Code has a `sophonme-context-engine` subagent. Claude automatically invokes it before asking you for context — querying your local activity database to surface relevant history for whatever task you're working on.
 
 A background sync service (`launchd` on macOS) re-ingests your data every hour, so context stays fresh without any manual steps.
 

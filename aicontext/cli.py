@@ -24,7 +24,7 @@ CLAUDE_AGENTS_DIR = os.path.expanduser("~/.claude/agents")
 CODEX_AGENTS_DIR = os.path.expanduser("~/.codex/agents")
 PI_SKILLS_DIR = os.path.expanduser("~/.pi/agent/skills")
 
-LAUNCHD_LABEL = "me.sophon.aicontext"
+LAUNCHD_LABEL = "sophonme.aicontext"
 LAUNCHD_PLIST = os.path.expanduser(f"~/Library/LaunchAgents/{LAUNCHD_LABEL}.plist")
 SYNC_INTERVAL_SECONDS = 3600  # 1 hour
 
@@ -314,8 +314,8 @@ def cmd_install() -> None:
     _print_ingestion_table(results)
     print()
     _print_ok(f"Generated SKILL.md  -> {os.path.join(AICONTEXT_DIR, 'SKILL.md')}")
-    _print_ok(f"Claude Code agent   -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophon-me-context-engine.md')}")
-    _print_ok(f"Codex agent         -> {os.path.join(CODEX_AGENTS_DIR, 'sophon-me-context-engine.toml')}")
+    _print_ok(f"Claude Code agent   -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophonme-context-engine.md')}")
+    _print_ok(f"Codex agent         -> {os.path.join(CODEX_AGENTS_DIR, 'sophonme-context-engine.toml')}")
     _print_ok(f"Pi skill            -> {os.path.join(PI_SKILLS_DIR, 'personal-data')}")
 
     # 5. Install background sync service
@@ -326,7 +326,7 @@ def cmd_install() -> None:
             _print_ok("Background sync     -> launchd install failed (run manually: aicontext sync)")
 
     print()
-    print("Done. The sophon-me-context-engine agent is now active in Claude Code, Codex, and Pi.")
+    print("Done. The sophonme-context-engine agent is now active in Claude Code, Codex, and Pi.")
     print()
     print("Give it a try!")
     print('  "Do thorough research on my history, and infer my MBTI"')
@@ -376,12 +376,12 @@ def cmd_uninstall() -> None:
         removed.append(f"Background sync    -> {LAUNCHD_PLIST}")
 
     # 2. Remove agent files
-    claude_agent = os.path.join(CLAUDE_AGENTS_DIR, "sophon-me-context-engine.md")
+    claude_agent = os.path.join(CLAUDE_AGENTS_DIR, "sophonme-context-engine.md")
     if os.path.exists(claude_agent):
         os.remove(claude_agent)
         removed.append(f"Claude Code agent   -> {claude_agent}")
 
-    codex_agent = os.path.join(CODEX_AGENTS_DIR, "sophon-me-context-engine.toml")
+    codex_agent = os.path.join(CODEX_AGENTS_DIR, "sophonme-context-engine.toml")
     if os.path.exists(codex_agent):
         os.remove(codex_agent)
         removed.append(f"Codex agent         -> {codex_agent}")

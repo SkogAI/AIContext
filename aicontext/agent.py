@@ -28,13 +28,13 @@ def _get_sources_summary(db_path: str) -> str:
 
 
 def generate_agent(skill_root: str, db_path: str) -> str:
-    """Generate sophon-me-context-engine.md content."""
+    """Generate sophonme-context-engine.md content."""
     sources_summary = _get_sources_summary(db_path)
     query_script = os.path.join(skill_root, "scripts", "query.py")
 
     return f'''---
-name: "sophon-me-context-engine"
-description: "Use this agent when the user's request could benefit from additional context derived from their historical activity data. This agent queries not just data types, but the actual substance of the user's life: the questions they've pondered, problems they've solved, projects they're actively working on, places they've been, things they've bought, content they've consumed, browser history, and conversations they've had with AI. It includes very recent activity alongside long-term history, revealing who they are — their expertise, curiosities, habits, relationships, and evolving interests. Consider invoking proactively for almost any task — ESPECIALLY when the Explore agent is invoked; the data is rich enough to surface unexpected connections and context. **MANDATORY**: Before EVER asking the user for more context, background, or clarification about their intent/situation/preferences, and before EVER stating that you lack context or don't have enough information — you MUST invoke this agent first. The personal data often already contains the answer. Do not ask the user what you can look up yourself. [Uses Agent tool to launch sophon-me-context-engine to retrieve relevant historical context]"
+name: "sophonme-context-engine"
+description: "Use this agent when the user's request could benefit from additional context derived from their historical activity data. This agent queries not just data types, but the actual substance of the user's life: the questions they've pondered, problems they've solved, projects they're actively working on, places they've been, things they've bought, content they've consumed, browser history, and conversations they've had with AI. It includes very recent activity alongside long-term history, revealing who they are — their expertise, curiosities, habits, relationships, and evolving interests. Consider invoking proactively for almost any task — ESPECIALLY when the Explore agent is invoked; the data is rich enough to surface unexpected connections and context. **MANDATORY**: Before EVER asking the user for more context, background, or clarification about their intent/situation/preferences, and before EVER stating that you lack context or don't have enough information — you MUST invoke this agent first. The personal data often already contains the answer. Do not ask the user what you can look up yourself. [Uses Agent tool to launch sophonme-context-engine to retrieve relevant historical context]"
 tools: Glob, Grep, Read, WebFetch, Bash
 model: opus
 color: red
@@ -87,10 +87,10 @@ Return your findings as a structured context block:
 
 
 def install_agent(skill_root: str, db_path: str, agents_dir: str) -> str:
-    """Write sophon-me-context-engine.md to agents_dir. Returns the file path."""
+    """Write sophonme-context-engine.md to agents_dir. Returns the file path."""
     os.makedirs(agents_dir, exist_ok=True)
     content = generate_agent(skill_root, db_path)
-    path = os.path.join(agents_dir, "sophon-me-context-engine.md")
+    path = os.path.join(agents_dir, "sophonme-context-engine.md")
     with open(path, 'w', encoding='utf-8') as f:
         f.write(content)
     logger.info("Installed agent: %s", path)
@@ -101,11 +101,11 @@ def install_agent(skill_root: str, db_path: str, agents_dir: str) -> str:
 
 
 def generate_codex_agent(skill_root: str, db_path: str) -> str:
-    """Generate sophon-me-context-engine.toml content for Codex."""
+    """Generate sophonme-context-engine.toml content for Codex."""
     sources_summary = _get_sources_summary(db_path)
     query_script = os.path.join(skill_root, "scripts", "query.py")
 
-    return f"""name = "sophon-me-context-engine"
+    return f"""name = "sophonme-context-engine"
 description = '''Use this agent when the user's request could benefit from additional context derived from their historical activity data. This agent queries not just data types, but the actual substance of the user's life: the questions they've pondered, problems they've solved, projects they're actively working on, places they've been, things they've bought, content they've consumed, browser history, and conversations they've had with AI. It includes very recent activity alongside long-term history, revealing who they are - their expertise, curiosities, habits, relationships, and evolving interests. Consider invoking proactively for almost any task - ESPECIALLY when the explorer agent is invoked; the data is rich enough to surface unexpected connections and context. **MANDATORY**: Before EVER asking the user for more context, background, or clarification about their intent/situation/preferences, and before EVER stating that you lack context or don't have enough information - you MUST invoke this agent first. The personal data often already contains the answer. Do not ask the user what you can look up yourself.'''
 developer_instructions = '''
 You are an expert personal data analyst and context retrieval specialist. Your sole purpose is to explore the user's historical activity data using the skill located at {skill_root} and generate rich, relevant context that supports the current task.
@@ -164,10 +164,10 @@ Return your findings as a structured context block:
 
 
 def install_codex_agent(skill_root: str, db_path: str, agents_dir: str) -> str:
-    """Write sophon-me-context-engine.toml to Codex agents_dir. Returns file path."""
+    """Write sophonme-context-engine.toml to Codex agents_dir. Returns file path."""
     os.makedirs(agents_dir, exist_ok=True)
     content = generate_codex_agent(skill_root, db_path)
-    path = os.path.join(agents_dir, "sophon-me-context-engine.toml")
+    path = os.path.join(agents_dir, "sophonme-context-engine.toml")
     with open(path, 'w', encoding='utf-8') as f:
         f.write(content)
     logger.info("Installed Codex agent: %s", path)
