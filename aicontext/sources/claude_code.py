@@ -285,7 +285,7 @@ Claude Code session history. Timeline records include both user prompts and assi
 | git_branch | string | Git branch at time of prompt |
 
 ## Reference Data
-Each session stored as `data/reference_data/claude_code/<session_id>.json`.
+Each session stored as `{DATA_DIR}/reference_data/claude_code/<session_id>.json`.
 
 Timeline rows link to specific messages via `ref_id='claude_code/<session_id>.json#msg:<message_id>'`.
 

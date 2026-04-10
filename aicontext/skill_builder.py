@@ -37,6 +37,7 @@ class SkillBuilder:
         self.db_path = db_path
         self.ref_dir = os.path.join(skill_root, "reference")
         self.data_dir = os.path.join(skill_root, "data")
+        self.real_data_dir = os.path.dirname(db_path)
 
     def build(self, results: list[IngestionResult]) -> None:
         os.makedirs(self.ref_dir, exist_ok=True)
@@ -100,6 +101,7 @@ class SkillBuilder:
         for r in results:
             doc = r.source.get_reference_doc()
             if doc:
+                doc = doc.replace("{DATA_DIR}", self.real_data_dir)
                 path = os.path.join(self.ref_dir, f"{r.source.source_key}.md")
                 with open(path, 'w', encoding='utf-8') as f:
                     f.write(doc)
@@ -223,7 +225,7 @@ GROUP BY source, service
 ORDER BY n DESC
 EOF
 ```
-Read-only SQL against data/activity.db. Returns pipe-separated table. Max 200 rows.
+Read-only SQL against {self.db_path}. Returns pipe-separated table. Max 200 rows.
 Use `--max-cell 0` for full cell contents.
 
 ## What's Available
@@ -237,7 +239,7 @@ Use `--max-cell 0` for full cell contents.
 
 ## Notes
 - All timestamps in local time ({tz}) with timezone offset. SQLite's `strftime()`/`datetime()` silently convert to UTC — use `SUBSTR()` for hour/date extraction and `datetime('now', 'localtime', ...)` for recency filters. See `reference/activity.md` for details.
-- `ref_type='local'`: ref_id is a path under `data/reference_data/`, optionally with `#msg:<id>` suffix
+- `ref_type='local'`: ref_id is a path under `{self.real_data_dir}/reference_data/`, optionally with `#msg:<id>` suffix
 - `ref_type='url'`: ref_id is the URL itself
 - `reference/activity.md` — schema and SQL query best practices
 - `reference/<source>.md` — source-specific field details and examples

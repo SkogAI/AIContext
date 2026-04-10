@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 AICONTEXT_DIR = os.path.expanduser("~/.aicontext")
 DATA_DIR = os.path.join(AICONTEXT_DIR, "data")
-SCRIPTS_DIR = os.path.join(AICONTEXT_DIR, "scripts")
+SKILL_DIR = os.path.join(AICONTEXT_DIR, "skill")
+SCRIPTS_DIR = os.path.join(SKILL_DIR, "scripts")
 LOGS_DIR = os.path.join(AICONTEXT_DIR, "logs")
 CONFIG_PATH = os.path.join(AICONTEXT_DIR, "config.json")
 CLAUDE_AGENTS_DIR = os.path.expanduser("~/.claude/agents")
@@ -243,10 +244,10 @@ def _run_ingest(sources_config: list[dict]) -> list:
     # Rebuild skill and agents
     db_path = os.path.join(DATA_DIR, "activity.db")
     if os.path.exists(db_path):
-        SkillBuilder(skill_root=AICONTEXT_DIR, db_path=db_path).build(results)
-        install_agent(skill_root=AICONTEXT_DIR, db_path=db_path, agents_dir=CLAUDE_AGENTS_DIR)
-        install_codex_agent(skill_root=AICONTEXT_DIR, db_path=db_path, agents_dir=CODEX_AGENTS_DIR)
-        install_pi_skill(skill_root=AICONTEXT_DIR, skills_dir=PI_SKILLS_DIR)
+        SkillBuilder(skill_root=SKILL_DIR, db_path=db_path).build(results)
+        install_agent(skill_root=SKILL_DIR, db_path=db_path, agents_dir=CLAUDE_AGENTS_DIR)
+        install_codex_agent(skill_root=SKILL_DIR, db_path=db_path, agents_dir=CODEX_AGENTS_DIR)
+        install_pi_skill(skill_root=SKILL_DIR, data_dir=DATA_DIR, skills_dir=PI_SKILLS_DIR)
 
     return results
 
@@ -313,7 +314,7 @@ def cmd_install() -> None:
     print()
     _print_ingestion_table(results)
     print()
-    _print_ok(f"Generated SKILL.md  -> {os.path.join(AICONTEXT_DIR, 'SKILL.md')}")
+    _print_ok(f"Generated SKILL.md  -> {os.path.join(SKILL_DIR, 'SKILL.md')}")
     _print_ok(f"Claude Code agent   -> {os.path.join(CLAUDE_AGENTS_DIR, 'sophonme-context-engine.md')}")
     _print_ok(f"Codex agent         -> {os.path.join(CODEX_AGENTS_DIR, 'sophonme-context-engine.toml')}")
     _print_ok(f"Pi skill            -> {os.path.join(PI_SKILLS_DIR, 'personal-data')}")

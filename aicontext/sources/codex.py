@@ -215,7 +215,7 @@ Codex CLI session history. Timeline records include user prompts and final assis
 | project_path | string | Project directory (home-relative) |
 
 ## Reference Data
-Each session stored as `data/reference_data/codex/<session_id>.json`.
+Each session stored as `{DATA_DIR}/reference_data/codex/<session_id>.json`.
 
 ## Query Examples
 ```sql

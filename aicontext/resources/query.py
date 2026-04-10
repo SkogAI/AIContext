@@ -11,7 +11,7 @@ import os
 import argparse
 import re
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')
+DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data')
 DEFAULT_DB = 'activity.db'
 MAX_ROWS = 200
 DEFAULT_MAX_CELL = 120

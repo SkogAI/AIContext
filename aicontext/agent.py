@@ -62,7 +62,7 @@ You serve as a dedicated subagent that mines the user's personal historical acti
    - `activity`: timestamp, source, service, action, title, extra, ref_type, ref_id
    - Sources: {sources_summary}
 
-4. **Access Reference Data**: For detailed records, use ref_type/ref_id to locate JSON files in `data/reference_data/{{source}}/`.
+4. **Access Reference Data**: For detailed records, use ref_type/ref_id to locate JSON files in `{os.path.dirname(db_path)}/reference_data/{{source}}/`.
 
 5. **Analyze and Synthesize**: Don't just dump raw data. Identify relevant patterns, highlight recent and significant activities, note preferences and recurring themes, and surface connections between past activities and the current task.
 
@@ -80,7 +80,7 @@ Return your findings as a structured context block:
 - Start with broad queries to orient, then drill into specifics.
 
 ## Important Guidelines
-- Do NOT explore, read, or access any files outside of {skill_root}
+- Do NOT explore, read, or access any files outside of {skill_root} or {os.path.dirname(db_path)}
 - Never fabricate or assume historical data — only report what you actually find
 - Be thorough but focused — retrieve data relevant to the task, not everything available
 - If the skill fails or data is unavailable, clearly report what you attempted and what went wrong
@@ -132,7 +132,7 @@ You serve as a dedicated subagent that mines the user's personal historical acti
    - `activity`: timestamp, source, service, action, title, extra, ref_type, ref_id
    - Sources: {sources_summary}
 
-4. **Access Reference Data**: For detailed records, use ref_type/ref_id to locate JSON files in `data/reference_data/{{source}}/`.
+4. **Access Reference Data**: For detailed records, use ref_type/ref_id to locate JSON files in `{os.path.dirname(db_path)}/reference_data/{{source}}/`.
 
 5. **Analyze and Synthesize**: Don't just dump raw data. Analyze what you find and synthesize it into meaningful context:
    - Identify relevant patterns and trends
@@ -154,7 +154,7 @@ Return your findings as a structured context block:
 - Start with broad queries to orient, then drill into specifics.
 
 ## Important Guidelines
-- Do NOT explore, read, or access any files outside of {skill_root}
+- Do NOT explore, read, or access any files outside of {skill_root} or {os.path.dirname(db_path)}
 - Never fabricate or assume historical data - only report what you actually find
 - Be thorough but focused - retrieve data relevant to the task, not everything available
 - If the skill fails or data is unavailable, clearly report what you attempted and what went wrong
@@ -177,11 +177,12 @@ def install_codex_agent(skill_root: str, db_path: str, agents_dir: str) -> str:
 # ── Pi skill ──────────────────────────────────────────────────────────────
 
 
-def install_pi_skill(skill_root: str, skills_dir: str) -> str:
+def install_pi_skill(skill_root: str, data_dir: str, skills_dir: str) -> str:
     """Symlink aicontext into Pi's skills directory so Pi discovers it natively.
 
     Creates ~/.pi/agent/skills/personal-data/ with symlinks pointing back
-    to the canonical files under skill_root (~/.aicontext/).
+    to the canonical files under skill_root (~/.aicontext/skill/) and
+    data_dir (~/.aicontext/data/).
     """
     skill_dir = os.path.join(skills_dir, "personal-data")
     os.makedirs(skill_dir, exist_ok=True)
@@ -189,7 +190,7 @@ def install_pi_skill(skill_root: str, skills_dir: str) -> str:
     targets = {
         "SKILL.md": os.path.join(skill_root, "SKILL.md"),
         "scripts": os.path.join(skill_root, "scripts"),
-        "data": os.path.join(skill_root, "data"),
+        "data": data_dir,
         "reference": os.path.join(skill_root, "reference"),
     }
 
