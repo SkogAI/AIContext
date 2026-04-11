@@ -20,7 +20,7 @@ Everything stays under your control. Data is ingested locally, stored locally, a
 pip install sophonme-aicontext && aicontext install
 ```
 
-`aicontext` install scans your machine for supported local data sources, asks for consent before including each source type, ingests approved data into a local SQLite database, and installs the local agent configuration used by supported tools such as Claude Code, Codex, and Pi.
+`aicontext install` scans your machine for supported local data sources, asks for consent before including each source type, ingests approved data into a local SQLite database, and installs the local agent configuration used by supported tools such as Claude Code, Codex, Pi, and OpenClaw.
 
 It does not upload your data or require any cloud service. Changes are limited to local configuration and the `~/.aicontext/` directory, and everything can be removed later if you uninstall the tool.
 
@@ -38,19 +38,32 @@ Scanning for local data sources...
           -> included
 
 Ingesting data...
-  Ingested: 24803 new records, 0 updated
 
-Done.
+  Source              Parsed    New  Updated
+  ──────────────────────────────────────────
+  Claude Code         12,847  12,847        0
+  Chrome               8,456   8,456        0
+  ──────────────────────────────────────────
+  Total               21,303  21,303        0
 
-The sophonme-context-engine agent is now active in Claude Code.
-The Codex agent is installed at `~/.codex/agents/sophonme-context-engine.toml`.
-Your data ingests automatically every hour.
+  Generated SKILL.md  -> ~/.aicontext/skill/SKILL.md
+  Claude Code agent   -> ~/.claude/agents/sophonme-context-engine.md
+  Codex agent         -> ~/.codex/agents/sophonme-context-engine.toml
+  Pi / OpenClaw skill -> ~/.agents/skills/personal-data
+  Background sync     -> hourly via launchd (sophonme.aicontext)
+
+Done. The sophonme-context-engine agent is now active in Claude Code, Codex, Pi, and OpenClaw.
 ```
 
 ## Example Prompts
 
 ```
-foo
+"Do thorough research on my history, and infer my MBTI"
+"Recommend a book, video, or podcast for me"
+"What do I want to buy the most?"
+"Show how deeply you know about me"
+"Check my history and suggest what I should do this weekend"
+"What is the biggest miss of my daily life that I may not even be aware of?"
 ```
 
 ## How it works
@@ -61,13 +74,14 @@ A background periodic local ingest service (`launchd` on macOS) re-ingests your 
 
 ```
 ~/.aicontext/
- ├── SKILL.md
  ├── data/
  │   ├── activity.db       — unified timeline
  │   └── reference_data/   — full session content
- ├── reference/            — per-source schema docs
- └── scripts/
-     └── query.py          — read-only SQL query tool
+ └── skill/
+     ├── SKILL.md
+     ├── reference/        — per-source schema docs
+     └── scripts/
+         └── query.py      — read-only SQL query tool
 ```
 
 The agent reads from `~/.aicontext/` using a read-only SQL query script. It never writes to your data, and never sends anything outside your machine.
@@ -86,12 +100,12 @@ More sources coming soon.
 
 ## Supported agents
 
-| Agent | Status | Type |
-|-------|--------|--------|
-| Claude Code | Supported | Subagent |
-| Codex | Supported (older versions may need `multi_agent = true` for spawned subagents) | Subagent |
-| Pi | Supported | Skill |
-| OpenClaw | Supported | Skill |
+| Agent | Type |
+|-------|------|
+| Claude Code | Subagent |
+| Codex | Subagent |
+| Pi | Skill |
+| OpenClaw | Skill |
 
 ### Troubleshooting
 If you use Codex, older app versions may need this in `~/.codex/config.toml` for spawned-subagent support:
@@ -113,7 +127,7 @@ Contributions are welcome, especially new data sources.
 
 The easiest way to contribute is to add a new source under `aicontext/sources/`. Each source is a single file that implements two methods: `ingest_activity()` for timeline records and `ingest_reference()` for full session content. See `sources/claude_code.py` for the smallest complete example.
 
-Good source ideas include Firefox, Arc, VS Code history, Obsidian, Zotero, Spotify, and shell history.
+Good source ideas include Firefox, Arc, Obsidian, Zotero, Spotify, and shell history.
 
 If you want feedback before building, open an issue with the source you have in mind and any notes on the schema or data shape. That makes it easier to align on fit before you start.
 
