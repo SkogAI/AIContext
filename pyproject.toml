@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sophonme-aicontext"
-version = "0.1.1"
+version = "0.1.2"
 description = "Local-first AI context engine. Access your local data to provide context for any agent."
 readme = "README.md"
 license = { text = "MIT" }
