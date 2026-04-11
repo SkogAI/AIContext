@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/SophonMe/AIContext/actions/workflows/ci.yml/badge.svg)](https://github.com/SophonMe/AIContext/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/sophonme-aicontext)](https://pypi.org/project/sophonme-aicontext/)
+[![Discord community](https://img.shields.io/badge/Discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/WaZYm95ppH)
 
 **The personal context layer for AI agents.**
 
