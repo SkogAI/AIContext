@@ -21,7 +21,7 @@ Everything stays under your control. Data is ingested locally, stored locally, a
 pip install sophonme-aicontext && aicontext install
 ```
 
-### From source
+Or, from source:
 
 ```bash
 git clone https://github.com/SophonMe/AIContext.git
