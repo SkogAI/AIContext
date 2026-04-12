@@ -58,15 +58,13 @@ Done. The sophonme-context-engine agent is now active in Claude Code, Codex, Pi,
 
 ## Example Prompts
 
-```
-"Can you guess what’s been troubling me lately?"
-"Do thorough research on my history, and infer my MBTI"
-"Recommend a book, video, or podcast for me"
-"What do I want to buy the most?"
-"Show how deeply you know about me"
-"Check my history and suggest what I should do this weekend"
-"What is the biggest miss of my daily life that I may not even be aware of?"
-```
+- `"Can you guess what’s been troubling me lately?"`
+- [`"Do thorough research on my history, and infer my MBTI"`](https://aicontext.me/#example-mbti)
+- [`"Recommend a book, video, or podcast for me"`](https://aicontext.me/#example-recommend)
+- `"What do I want to buy the most?"`
+- `"Show how deeply you know about me"`
+- [`"Check my history and suggest what I should do this weekend"`](https://aicontext.me/#example-weekend)
+- [`"What is the biggest miss of my daily life that I may not even be aware of?"`](https://aicontext.me/#example-biggest-miss)
 
 ## How it works
 
