@@ -238,6 +238,8 @@ def _clean_error(msg: str) -> str:
 
 
 def _print_ingestion_table(results: list) -> None:
+    if not results:
+        return
     rows = []
     for r in results:
         name = r.source.name
@@ -375,9 +377,12 @@ def cmd_install() -> None:
     sources_config = [{"key": s.source_key, "path": p} for s, p in approved]
     results = _run_ingest(sources_config)
 
-    # 5. Install ingest skill
-    from aicontext.ingest_skill import install
-    install(skills_dir=SHARED_SKILLS_DIR)
+    # 5. Install ingest skill (optional — skill may not be bundled)
+    try:
+        from aicontext.ingest_skill import install as install_ingest_skill
+        install_ingest_skill(skills_dir=SHARED_SKILLS_DIR)
+    except ImportError:
+        pass
 
     print()
     _print_ingestion_table(results)
