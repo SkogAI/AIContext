@@ -13,6 +13,19 @@ Given a base data path from the user, you explore the directory, identify
 ingestible data sources, and implement DataSource classes that parse them
 into AIContext's unified activity database.
 
+**This skill handles one-time static ingestion only.** All data sources
+created through this skill are registered as `"mode": "static"` — they are
+ingested once and skipped by the hourly sync daemon. This is the correct
+approach for data exports (Google Takeout, Amazon data downloads, ChatGPT
+export, etc.) that are snapshots in time.
+
+If a user asks to ingest a **dynamic data source** (one that updates
+continuously, e.g., a local app database, browser history), **do not
+implement it through this skill**. Instead, explain that dynamic sources
+must be implemented directly in `aicontext/sources/` within the AIContext
+package and registered in `aicontext/sources/__init__.py`, then guide the
+user to do so.
+
 ## Exploring the AIContext Source Code
 
 You are encouraged to read the actual aicontext source code for deeper
@@ -97,8 +110,7 @@ the `"sources"` array:
 {"key": "<source_key>", "path": "<confirmed_path>", "mode": "static"}
 ```
 
-Use `"mode": "static"` for one-time data exports (Google Takeout, Amazon CSV, etc.).
-Use `"mode": "dynamic"` for data that updates continuously (e.g., a local app database).
+Always use `"mode": "static"` — this skill only handles one-time data exports.
 
 ## Files
 
