@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, final
+from typing import final
 
 from aicontext.records import ActivityRecord, ReferenceFile
 from aicontext.dedup import compute_default_dedup_key
@@ -44,10 +44,6 @@ class DataSource(ABC):
     @final
     def resolve_conflict(self, existing: ActivityRecord, new: ActivityRecord) -> ActivityRecord:
         return existing if existing.timestamp <= new.timestamp else new
-
-    @final
-    def merge_reference(self, existing_data: Any, new_data: Any) -> Any:
-        return new_data
 
     @property
     def mode(self) -> str:

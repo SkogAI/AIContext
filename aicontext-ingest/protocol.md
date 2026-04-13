@@ -61,7 +61,6 @@ class DataSource(ABC):
     # dedup_key(record) — MD5 hash for deduplication
     # resolve_batch_conflict(a, b) — older timestamp wins
     # resolve_conflict(existing, new) — older timestamp wins
-    # merge_reference(existing_data, new_data) — new data replaces old
 ```
 
 ## ActivityRecord
@@ -153,12 +152,10 @@ helps you write correct `ingest_activity()` implementations.
 
 ### Reference data
 
-- **Merge then hash**: When a reference file already exists on disk, the
-  ingester loads it and calls `merge_reference(existing_data, new_data)`.
-  The default implementation replaces old data with new entirely (no
-  field-level merging). After merging, a SHA-256 content hash is computed.
-  If the hash matches the stored hash in `_meta.json`, the write is skipped.
-  If different, the file is written to disk and the hash is updated.
+- **CRDT dedup**: When a reference file already exists on disk, the ingester
+  reads it and compares the content hash and file size against the new data.
+  If the hash matches, the write is skipped. Otherwise, the larger file wins
+  (more data is assumed more complete); equal sizes use hash as tiebreak.
 - **Storage**: Reference files are stored as JSON under
   `~/.aicontext/data/reference_data/<source_key>/`.
 
