@@ -4,6 +4,7 @@
 
 Anthropic Claude web conversations exported via account settings.
 
+- **source_key**: `"claude_web"`
 - **source**: `"anthropic"`
 - **service**: `"claude_web"`
 - **actions**: `"prompted"` (human), `"received"` (assistant)

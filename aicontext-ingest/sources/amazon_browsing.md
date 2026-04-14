@@ -4,6 +4,7 @@
 
 Amazon product browsing/viewing history exported as CSV.
 
+- **source_key**: `"amazon_browsing"`
 - **source**: `"amazon"`
 - **service**: `"browsing"`
 - **action**: `"viewed"`
@@ -12,7 +13,7 @@ Amazon product browsing/viewing history exported as CSV.
 ## Data Location
 
 From Amazon's "Request My Data" export. May be named
-`Retail.BrowsingHistory.csv`, `BrowsingHistory.csv`, or similar.
+`Request All Your Data.Detail Page Glance View Impressions.csv`, or similar.
 
 ## Data Format
 

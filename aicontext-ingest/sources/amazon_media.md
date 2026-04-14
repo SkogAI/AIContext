@@ -4,6 +4,7 @@
 
 Amazon listening and viewing history exported as CSV files.
 
+- **source_key**: `"amazon_media"`
 - **source**: `"amazon"`
 - **mode**: `static`
 
@@ -13,11 +14,12 @@ This guide covers two related exports:
 
 ## Data Location
 
-From Amazon's "Request My Data" export. Look for:
-- Music: `Retail.ListeningHistory.csv`, `Amazon Music/`, or files with
-  "Listen" in the name
-- Video: `Retail.ViewingHistory.csv`, `Prime Video/`, or files with
-  "Viewing" or "Watch" in the name
+From Amazon's "Request My Data" export. The source_path should point to
+the root of the export directory. The code looks for these subdirectories:
+- Music: `Amazon-Music/listening.csv`
+- Video: `PrimeVideo.ViewingHistory/PrimeVideo.ViewingHistory.csv`
+- Kindle: `Kindle.Devices.ReadingSession/Kindle.Devices.ReadingSession.csv`
+- Audible: `Audible.Listening/Account Holder/Listening.csv`
 
 ## Amazon Music Format
 

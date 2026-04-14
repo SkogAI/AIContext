@@ -4,6 +4,7 @@
 
 OpenAI ChatGPT conversations exported via "Export my data" in ChatGPT settings.
 
+- **source_key**: `"chatgpt"`
 - **source**: `"openai"`
 - **service**: `"chatgpt"`
 - **actions**: `"prompted"` (user), `"received"` (assistant)
@@ -15,7 +16,7 @@ The export is a ZIP file or extracted directory. Inside, look for conversation
 JSON files. Common structures:
 
 ```
-chatgpt-export/
+User Online Activity/
 ├── conversations.json          (single file with all conversations)
 ├── Conversations__001/         (or split into numbered directories)
 │   ├── conversations-001.json

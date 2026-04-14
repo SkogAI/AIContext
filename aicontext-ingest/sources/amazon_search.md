@@ -4,6 +4,7 @@
 
 Amazon search query history exported as CSV.
 
+- **source_key**: `"amazon_search"`
 - **source**: `"amazon"`
 - **service**: `"search"`
 - **action**: `"searched"`
@@ -11,9 +12,10 @@ Amazon search query history exported as CSV.
 
 ## Data Location
 
-Typically a CSV file from Amazon's "Request My Data" export. May be named
-`Search-Data.csv`, `Retail.Search-Data.csv`, or similar. Look for CSV files
-with columns containing "Keywords" and "Search Time".
+From Amazon's "Request My Data" export. Typically in a directory named
+`Retail.Search-Data/`, containing files like
+`Retail.Search-Data.Retail.Customer-Engagement.csv`. If pointed at a
+directory, the code scans for all `.csv` files inside.
 
 ## Data Format
 

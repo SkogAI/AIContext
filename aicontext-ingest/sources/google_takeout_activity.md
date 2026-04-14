@@ -5,6 +5,7 @@
 Google Takeout's "My Activity" export contains a user's activity history across
 Google services: Search, YouTube, Maps, Chrome, Gmail, Translate, Gemini, etc.
 
+- **source_key**: `"google_takeout_activity"`
 - **source**: `"google"`
 - **service**: varies by Google product (see below)
 - **mode**: `static`

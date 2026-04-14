@@ -4,6 +4,7 @@
 
 Amazon purchase history exported as CSV.
 
+- **source_key**: `"amazon_orders"`
 - **source**: `"amazon"`
 - **service**: `"orders"`
 - **action**: `"purchased"`
@@ -12,10 +13,9 @@ Amazon purchase history exported as CSV.
 ## Data Location
 
 Exported from Amazon via "Download order reports" or "Request My Data".
-Typically a CSV file named something like `Orders.csv`,
-`Retail.OrderHistory.csv`, `01-Digital-Orders.csv`, or similar. May be
-inside a directory of multiple Amazon export files. Scan for CSV files
-whose headers suggest order data.
+Typically named `Order History.csv` or `Digital Content Orders.csv`,
+inside a directory like `Your Amazon Orders/`. If pointed at a directory,
+the code scans for any `.csv` file with "order" in its name.
 
 ## Data Format
 

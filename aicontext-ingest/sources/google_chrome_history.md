@@ -6,6 +6,7 @@ Chrome browsing history exported via Google Takeout as a JSON file.
 This is NOT the live Chrome SQLite database (that's handled by a built-in
 source). This is the static Takeout export.
 
+- **source_key**: `"google_chrome_history"`
 - **source**: `"google"`
 - **service**: `"chrome"`
 - **action**: `"visited"`

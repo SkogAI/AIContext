@@ -4,6 +4,7 @@
 
 Amazon shopping cart activity exported as CSV.
 
+- **source_key**: `"amazon_cart"`
 - **source**: `"amazon"`
 - **service**: `"cart"`
 - **action**: `"carted"`
@@ -12,7 +13,7 @@ Amazon shopping cart activity exported as CSV.
 ## Data Location
 
 From Amazon's "Request My Data" export. May be named
-`Retail.CartItems.csv`, `Cart-Items.csv`, or similar.
+`Cart History.csv`, or similar.
 
 ## Data Format
 
