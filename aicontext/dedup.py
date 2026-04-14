@@ -114,3 +114,11 @@ def compute_default_dedup_key(title: str, service: str, action: str, ts: str) ->
     rounded = round_timestamp(ts)
     raw = service + "|" + action + "|" + normalize_for_dedup(title) + "|" + rounded
     return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+
+def should_replace_reference(new_hash: str, new_size: int,
+                             local_hash: str, local_size: int) -> bool:
+    """CRDT resolution for reference files: larger file wins, hash tiebreak."""
+    if new_size != local_size:
+        return new_size > local_size
+    return new_hash > local_hash

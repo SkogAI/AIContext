@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, final
+from typing import final
 
 from aicontext.records import ActivityRecord, ReferenceFile
 from aicontext.dedup import compute_default_dedup_key
@@ -45,9 +45,14 @@ class DataSource(ABC):
     def resolve_conflict(self, existing: ActivityRecord, new: ActivityRecord) -> ActivityRecord:
         return existing if existing.timestamp <= new.timestamp else new
 
-    @final
-    def merge_reference(self, existing_data: Any, new_data: Any) -> Any:
-        return new_data
+    @property
+    def mode(self) -> str:
+        """'dynamic' (default) or 'static'.
+
+        Static sources are skipped by the hourly sync daemon.
+        User-triggered sync runs all sources regardless of mode.
+        """
+        return "dynamic"
 
     @abstractmethod
     def get_reference_doc(self) -> str:

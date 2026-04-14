@@ -16,6 +16,7 @@ from aicontext.database import create_database, insert_records, update_record, l
 from aicontext.dedup import (
     collapse_consecutive, compute_default_dedup_key, content_hash_json,
     normalize_for_dedup, pick_older_record, records_equal,
+    should_replace_reference,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,29 +86,12 @@ class Ingester:
                 return f"extra not JSON-serializable: {e}"
         return None
 
-    def _load_ref_meta(self) -> dict:
-        meta_path = os.path.join(self.ref_dir, "_meta.json")
-        if os.path.exists(meta_path):
-            try:
-                with open(meta_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception:
-                return {}
-        return {}
-
-    def _save_ref_meta(self, meta: dict) -> None:
-        meta_path = os.path.join(self.ref_dir, "_meta.json")
-        with open(meta_path, "w", encoding="utf-8") as f:
-            json.dump(meta, f, ensure_ascii=False)
-
     def _ingest_references(self, source: DataSource, source_path: str,
                            source_config: dict) -> tuple[int, int, int]:
         ref_files = source.ingest_reference(source_path, source_config, db_path=self.db_path)
         if not ref_files:
             return 0, 0, 0
 
-        meta = self._load_ref_meta()
-        meta_changed = False
         written = 0
         overwritten = 0
         skipped = 0
@@ -117,38 +101,26 @@ class Ingester:
             if out_path is None:
                 raise ValueError(f"invalid reference path from source {source.source_key}: {ref_file.path!r}")
 
-            data = ref_file.data
-            if os.path.exists(out_path):
-                try:
-                    with open(out_path, "r", encoding="utf-8") as f:
-                        existing_data = json.load(f)
-                    data = source.merge_reference(existing_data, data)
-                except Exception:
-                    pass
-
-            new_hash = content_hash_json(data)
-            serialized = json.dumps(data, ensure_ascii=False)
+            serialized = json.dumps(ref_file.data, ensure_ascii=False)
+            new_hash = content_hash_json(ref_file.data)
             new_size = len(serialized.encode("utf-8"))
-            stored = meta.get(ref_file.path)
-            if isinstance(stored, dict) and stored.get("content_hash") == new_hash:
-                skipped += 1
-                continue
-
-            os.makedirs(os.path.dirname(out_path), exist_ok=True)
 
             if os.path.exists(out_path):
+                with open(out_path, "r", encoding="utf-8") as f:
+                    local_data = json.load(f)
+                local_hash = content_hash_json(local_data)
+                local_size = os.path.getsize(out_path)
+                if local_hash == new_hash or not should_replace_reference(
+                        new_hash, new_size, local_hash, local_size):
+                    skipped += 1
+                    continue
                 overwritten += 1
             else:
                 written += 1
 
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(serialized)
-
-            meta[ref_file.path] = {"content_hash": new_hash, "size": new_size}
-            meta_changed = True
-
-        if meta_changed:
-            self._save_ref_meta(meta)
 
         return written, overwritten, skipped
 
